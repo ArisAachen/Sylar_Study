@@ -14,7 +14,8 @@
 
 #include <string>
 #include <iostream>
-#include <pthread.h>
+#include <memory>
+#include <vector>
 
 
 /**
@@ -50,6 +51,7 @@ static const Level string_to_level(const std::string & msg);
 
 class LogEvent {
 public:
+    typedef std::shared_ptr<LogEvent> ptr;
     /**
      * @brief delete default constructor
      * avoid creating non-param obj
@@ -59,6 +61,8 @@ public:
 
     // now only exist one param, other params use default value
     LogEvent(const std::string & msg);
+
+    virtual~LogEvent();
 
     /**
      * @brief get code info
@@ -118,8 +122,92 @@ private:
     std::string log_msg_ {};
 };
 
-class LogFormat {
+class LogFormatter {
+public:
+    /**
+     * @brief 构造函数
+     * @param[in] pattern 格式模板
+     * @details 
+     *  %m 消息
+     *  %p 日志级别
+     *  %r 累计毫秒数
+     *  %c 日志名称
+     *  %t 线程id
+     *  %n 换行
+     *  %d 时间
+     *  %f 文件名
+     *  %l 行号
+     *  %T 制表符
+     *  %F 协程id
+     *  %N 线程名称
+     *
+     *  默认格式 "%d{%Y-%m-%d %H:%M:%S}%T%t%T%N%T%F%T[%p]%T[%c]%T%f:%l%T%m%n"
+     */
+    typedef std::shared_ptr<LogFormatter> ptr;
 
+    /**
+     * @brief Construct a new Log Formatter object
+     * 
+     * @param pattern 
+     */
+    LogFormatter(const std::string & pattern);
+
+    /**
+     * @brief Destroy the Log Formatter object
+     * 
+     */
+    virtual~LogFormatter();
+
+    /**
+     * @brief init format
+     * 
+     * @return * void 
+     */
+    void init();
+
+    /**
+     * @brief Get the format object
+     * 
+     * @return * const std::string 
+     */
+    const std::string get_format() const;
+
+public:
+    /**
+     * @brief 
+     * 
+     * @param event 
+     * @return * const std::string 
+     */
+    std::string format(const LogEvent::ptr & event);
+
+    /**
+     * @brief 
+     * 
+     * @param[in, out] os log out 
+     * @param event 
+     * @return std::ostream& 
+     */
+    friend std::ostream & format(std::ostream & os, const LogEvent::ptr & event);
+
+public:
+    class FormatItem {
+    public:
+    FormatItem(const std::string & name):item_name_(name) {}
+    virtual~FormatItem() {}
+
+    virtual std::string format(const LogEvent::ptr & event) = 0;
+    virtual std::ostream & format(std::ostream & os, const LogEvent::ptr & event) = 0;
+
+    std::string get_item_name() { return item_name_; }
+    private:
+    std::string item_name_ {};
+    };
+
+private:
+    /// log format
+    std::string log_pattern_;
+    std::vector<FormatItem> format_items_;
 };
 
 
