@@ -38,7 +38,7 @@ enum class Level {UNKNOWN, TRACE, DEBUG, INFO, WARN, FATAL};
  * 
  * @return const std::string 
  */
-static const std::string level_to_string(Level level);
+static std::string level_to_string(Level level);
 
 /**
  * @brief transform msg to string
@@ -46,7 +46,7 @@ static const std::string level_to_string(Level level);
  * @param msg 
  * @return Level 
  */
-static const Level string_to_level(const std::string & msg);
+static Level string_to_level(const std::string & msg);
 };
 
 class LogEvent {
@@ -179,7 +179,7 @@ public:
      * @param event 
      * @return * const std::string 
      */
-    std::string format(const LogEvent::ptr & event);
+    std::string format(LogLevel::Level level, const LogEvent::ptr & event);
 
     /**
      * @brief 
@@ -188,7 +188,7 @@ public:
      * @param event 
      * @return std::ostream& 
      */
-    friend std::ostream & format(std::ostream & os, const LogEvent::ptr & event);
+    friend std::ostream & format(std::ostream & os, LogLevel::Level level, const LogEvent::ptr & event);
 
 public:
     class FormatItem {
@@ -196,11 +196,11 @@ public:
     FormatItem(const std::string & name):item_name_(name) {}
     virtual~FormatItem() {}
 
-    virtual std::string format(const LogEvent::ptr & event) = 0;
-    virtual std::ostream & format(std::ostream & os, const LogEvent::ptr & event) = 0;
+    virtual std::string format(LogLevel::Level level, const LogEvent::ptr & event) = 0;
+    virtual std::ostream & format(std::ostream & os, LogLevel::Level level, const LogEvent::ptr & event) = 0;
 
     std::string get_item_name() { return item_name_; }
-    private:
+    protected:
     std::string item_name_ {};
     };
 
