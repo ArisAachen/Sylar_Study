@@ -17,7 +17,7 @@
 #include <memory>
 #include <fstream>
 #include <vector>
-
+#include <unordered_map>
 
 /**
  * @brief log use 
@@ -212,7 +212,7 @@ private:
     std::vector<FormatItem::ptr> format_items_;
 };
 
-class LogAppender : public std::enable_shared_from_this {
+class LogAppender : public std::enable_shared_from_this<LogAppender> {
 public:
     typedef std::shared_ptr<LogAppender> ptr;
     LogAppender() {}
@@ -228,12 +228,6 @@ public:
 
     // output log
     virtual void log(LogLevel::Level level, const LogEvent::ptr event) = 0;
-    // void trace(const LogEvent::ptr event);
-    // void debug(const LogEvent::ptr event);
-    // void info(const LogEvent::ptr event);
-    // void warn(const LogEvent::ptr event);
-    // void error(const LogEvent::ptr event);
-    // void fatal(const LogEvent::ptr event);
 
 protected:
     // set default log level as info
@@ -263,6 +257,7 @@ private:
 
 class Logger {
 public:
+    typedef std::shared_ptr<Logger> ptr;
     Logger(const std::string & name);
     virtual~Logger();
 
@@ -275,7 +270,7 @@ public:
     const std::string get_name();
 
     // log
-    void log(LogLevel::Level level, const LogEvent & event);
+    void log(LogLevel::Level level, const LogEvent::ptr event);
 private:
     std::string name_ {""};
     std::vector<LogAppender::ptr> appenders_;
@@ -283,8 +278,24 @@ private:
 
 
 class LogMgr {
+public:
+    void addLogger(Logger::ptr logger);
+    void delLogger(Logger::ptr logger);
 
+    void log(LogLevel::Level level, const LogEvent::ptr event);
+    void trace(const LogEvent::ptr event);
+    void debug(const LogEvent::ptr event);
+    void info(const LogEvent::ptr event);
+    void warn(const LogEvent::ptr event);
+    void error(const LogEvent::ptr event);
+    void fatal(const LogEvent::ptr event);
+
+private:
+    std::unordered_map<std::string, Logger::ptr> logger_maps_;
 };
+
+
+
 
 
 };

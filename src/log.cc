@@ -434,6 +434,20 @@ void Logger::delLogAppender(LogAppender::ptr appender) {
     }
 }
 
+void Logger::set_name(const std::string & name) {
+    name_ = name;
+}
+
+const std::string Logger::get_name() {
+    return name_;
+}
+
+void Logger::log(LogLevel::Level level, const LogEvent::ptr event) {
+    for (auto iter : appenders_) {
+        iter->log(level, event);
+    }
+}
+
 
 
 
