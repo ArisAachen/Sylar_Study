@@ -15,6 +15,7 @@
 #include <string>
 #include <iostream>
 #include <memory>
+#include <fstream>
 #include <vector>
 
 
@@ -150,7 +151,7 @@ public:
      * 
      * @param pattern 
      */
-    LogFormatter(const std::string & pattern);
+    LogFormatter(const std::string & pattern = "%d{%Y-%m-%d %H:%M:%S}%T%t%T%N%T%F%T[%p]%T[%c]%T%f:%l%T%m%n");
 
     /**
      * @brief Destroy the Log Formatter object
@@ -188,16 +189,17 @@ public:
      * @param event 
      * @return std::ostream& 
      */
-    friend std::ostream & format(std::ostream & os, LogLevel::Level level, const LogEvent::ptr & event);
+    std::ostream & format(std::ostream & os, LogLevel::Level level, const LogEvent::ptr & event);
 
 public:
     class FormatItem {
     public:
+    typedef std::shared_ptr<FormatItem> ptr;
     FormatItem(const std::string & name):item_name_(name) {}
     virtual~FormatItem() {}
 
-    virtual std::string format(LogLevel::Level level, const LogEvent::ptr & event) = 0;
-    virtual std::ostream & format(std::ostream & os, LogLevel::Level level, const LogEvent::ptr & event) = 0;
+    virtual std::string format(LogLevel::Level level, const LogEvent::ptr event) = 0;
+    virtual std::ostream & format(std::ostream & os, LogLevel::Level level, const LogEvent::ptr event) = 0;
 
     std::string get_item_name() { return item_name_; }
     protected:
@@ -207,17 +209,76 @@ public:
 private:
     /// log format
     std::string log_pattern_;
-    std::vector<FormatItem> format_items_;
+    std::vector<FormatItem::ptr> format_items_;
+};
+
+class LogAppender : public std::enable_shared_from_this {
+public:
+    typedef std::shared_ptr<LogAppender> ptr;
+    LogAppender() {}
+    virtual~LogAppender() {}
+
+    // op log level
+    LogLevel::Level get_log_level();
+    void set_log_level(LogLevel::Level level);
+
+    // op log format
+    const std::string get_log_format() const;
+    void set_log_format(const std::string & format);
+
+    // output log
+    virtual void log(LogLevel::Level level, const LogEvent::ptr event) = 0;
+    // void trace(const LogEvent::ptr event);
+    // void debug(const LogEvent::ptr event);
+    // void info(const LogEvent::ptr event);
+    // void warn(const LogEvent::ptr event);
+    // void error(const LogEvent::ptr event);
+    // void fatal(const LogEvent::ptr event);
+
+protected:
+    // set default log level as info
+    LogLevel::Level level_ {LogLevel::Level::INFO};
+    // log format
+    LogFormatter::ptr formatter_ {};
+}; 
+
+class StdoutLogAppender : public LogAppender {
+public:
+    typedef std::shared_ptr<StdoutLogAppender> ptr;
+    virtual void log(LogLevel::Level level, const LogEvent::ptr event) override;
+};
+
+class FileLogAppender : public LogAppender {
+public:
+    typedef std::shared_ptr<FileLogAppender> ptr;
+    virtual void log(LogLevel::Level level, const LogEvent::ptr event) override;
+
+    bool init(const std::string & file);
+    ~FileLogAppender();
+
+private:
+    std::ofstream file_;
 };
 
 
-class LogAppender {
-
-}; 
-
-
 class Logger {
+public:
+    Logger(const std::string & name);
+    virtual~Logger();
 
+    // add log appender
+    void addLogAppender(LogAppender::ptr appender);
+    void delLogAppender(LogAppender::ptr appender);
+
+    // name 
+    void set_name(const std::string & name);
+    const std::string get_name();
+
+    // log
+    void log(LogLevel::Level level, const LogEvent & event);
+private:
+    std::string name_ {""};
+    std::vector<LogAppender::ptr> appenders_;
 };
 
 
