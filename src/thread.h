@@ -5,7 +5,8 @@ namespace aris {
 
 #include <pthread.h>
 #include <functional>
-
+#include <iostream>
+#include <cstring>
 
 class Thread {
 public:
@@ -15,7 +16,7 @@ public:
      * @param[in] cb thread func 
      * @param[in] name thread name
      */
-    Thread(std::function<void*(void*)> cb, std::string & name);
+    Thread(std::function<void()> cb, std::string & name);
     /**
      * @brief release thread
      * 
@@ -29,17 +30,29 @@ public:
      */
     void run();
     /**
-     * @brief get thread id
+     * @brief wrap 
      * 
-     * @return * pthread_t 
+     * @param[in] arg thread arg
+     */
+    static void *wrap(void* arg);
+    /**
+     * @brief get thread id
      */
     pthread_t get_thread_id();
-    // check if thread is the same
+
+    /**
+     * @brief get thread name
+     */
+    const std::string get_thread_name();
+
+    /**
+     * @brief check if thread id is equal
+     */
     bool operator==(Thread & thread);
 
 private:
     /// thread exec func
-    std::function<void*(void*)> cb_ {nullptr};
+    std::function<void()> cb_ {nullptr};
     /// thread name
     std::string name_ {""};
     /// thread id
