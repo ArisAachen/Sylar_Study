@@ -45,12 +45,6 @@ public:
      */
     void swap(std::function<void(void)>cb, const std::string & name);
     /**
-     * @brief wrap 
-     * 
-     * @param[in] arg thread arg
-     */
-    static void *wrap(void* arg);
-    /**
      * @brief get thread id
      */
     pthread_t get_thread_id() { return thread_id_; }
@@ -64,6 +58,14 @@ public:
      * @brief check if thread id is equal
      */
     bool operator==(Thread & thread);
+
+private:
+    /**
+     * @brief wrap exec func
+     * 
+     * @param[in] arg thread arg
+     */
+    static void *wrap(void* arg);
 
 private:
     /// thread exec func
