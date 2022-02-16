@@ -3,13 +3,17 @@
 
 namespace aris {
 
+#include "log.h"
+
 #include <pthread.h>
 #include <functional>
 #include <iostream>
+#include <memory>
 #include <cstring>
 
 class Thread {
 public:
+    typedef std::shared_ptr<Thread> ptr;
     /**
      * @brief 
      * 
@@ -30,6 +34,17 @@ public:
      */
     void run();
     /**
+     * @brief stop thread
+     * 
+     */
+    void stop();
+    /**
+     * @brief 
+     * @param[in] cb thread func
+     * @param[in] name thread name 
+     */
+    void swap(std::function<void(void)>cb, const std::string & name);
+    /**
      * @brief wrap 
      * 
      * @param[in] arg thread arg
@@ -38,12 +53,12 @@ public:
     /**
      * @brief get thread id
      */
-    pthread_t get_thread_id();
+    pthread_t get_thread_id() { return thread_id_; }
 
     /**
      * @brief get thread name
      */
-    const std::string get_thread_name();
+    const std::string get_thread_name() { return name_; }
 
     /**
      * @brief check if thread id is equal

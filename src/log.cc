@@ -5,6 +5,7 @@
 #include <cassert>
 #include <map>
 #include <functional>
+#include <stdarg.h>
 
 namespace aris {
 
@@ -25,6 +26,7 @@ std::string LogLevel::level_to_string(LogLevel::Level level) {
     XX(DEBUG);
     XX(INFO);
     XX(WARN);
+    XX(ERROR);
     XX(FATAL);
     default:
         break;
@@ -50,6 +52,7 @@ LogLevel::Level LogLevel::string_to_level(const std::string & msg) {
     XX(DEBUG);
     XX(INFO);
     XX(WARN);
+    XX(ERROR);
     XX(FATAL);
     return Level::UNKNOWN;
 }
@@ -79,7 +82,6 @@ LogEvent::LogEvent(const std::string & file, const std::string & func, uint32_t 
     
 
 }
-
 
 class StringFormatItem : public LogFormatter::FormatItem {
 public:
@@ -447,8 +449,5 @@ void Logger::log(LogLevel::Level level, const LogEvent::ptr event) {
         iter->log(level, event);
     }
 }
-
-
-
 
 }

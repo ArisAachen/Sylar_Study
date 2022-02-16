@@ -2,30 +2,22 @@
 #define __STUDY_SRC_UTILS_H__
 namespace aris {
 
+#include <string>
 
-
-template <typename T>
-class Singleton {
+class StringGenerator {
 public:
-    Singleton() = delete;
     template<typename... Args>
-    static T* getInstance(Args ...args) {
-        if (instance_ == nullptr) {
-            instance_ = new T(args...);
-        }
+    static const std::string format(const std::string & fmt, Args... args) {
+        char buf[128];
+        snprintf(buf, 128, fmt.c_str(), args...);
+        return std::string(buf);
     }
-
-public:
-    static T* instance_;
-
 };
 
 
-template<typename T>
-static T* Singleton<T>::instance_ = nullptr;
 
 
-};
+}
 
 
 #endif

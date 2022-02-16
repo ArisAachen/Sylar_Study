@@ -12,18 +12,31 @@
 #ifndef __STUDY_SRC_LOG_H__
 #define __STUDY_SRC_LOG_H__
 
+#include "singelton.h"
+#include "utils.h"
+
 #include <string>
 #include <iostream>
 #include <memory>
 #include <fstream>
 #include <vector>
 #include <unordered_map>
+#include <unistd.h>
 
 /**
  * @brief log use 
  * ARIS_LOG_INFO("%v %v", num, message);
  */
 
+
+#define ARIS_LOG_FMT_DEBUG(fmt, ...) ARIS_LOG_FMT_SIMPLE(aris::LogLevel::Level::DEBUG, fmt, __VA_ARGS__)
+#define ARIS_LOG_FMT_INFO(fmt, ...) ARIS_LOG_FMT_SIMPLE(aris::LogLevel::Level::INFO, fmt, __VA_ARGS__)
+#define ARIS_LOG_FMT_WARN(fmt, ...) ARIS_LOG_FMT_SIMPLE(aris::LogLevel::Level::WARN, fmt, __VA_ARGS__)
+#define ARIS_LOG_FMT_ERROR(fmt, ...) ARIS_LOG_FMT_SIMPLE(aris::LogLevel::Level::ERROR, fmt, __VA_ARGS__)
+
+#define ARIS_LOG_FMT_SIMPLE(level, fmt, ...) \ 
+    aris::SingeltonPtr<aris::LogMgr>::get_instance()->log(level, std::shared_ptr<aris::LogEvent>(new aris::LogEvent(__FILE__, \
+        __func__ , __LINE__, getpid(), pthread_self(), 0, time(nullptr), aris::StringGenerator::format(fmt, __VA_ARGS__))))
 
 namespace aris {
 
@@ -32,7 +45,7 @@ struct LogLevel {
  * @brief use to mark diff log level
  * 
  */
-enum class Level {UNKNOWN, TRACE, DEBUG, INFO, WARN, FATAL};
+enum class Level {UNKNOWN, TRACE, DEBUG, INFO, WARN, ERROR, FATAL};
 
 /**
  * @brief transform class level to string
@@ -50,7 +63,7 @@ static std::string level_to_string(Level level);
 static Level string_to_level(const std::string & msg);
 };
 
-class LogEvent {
+class LogEvent : public std::enable_shared_from_this<LogEvent> {
 public:
     typedef std::shared_ptr<LogEvent> ptr;
     /**
@@ -88,7 +101,7 @@ public:
     uint64_t get_log_time() { return log_time_; }
     const std::string get_log_msg() { return log_msg_; }
 
-private:
+public:
     /**
      * @brief c++11 delegating constructor
      * 
@@ -293,9 +306,6 @@ public:
 private:
     std::unordered_map<std::string, Logger::ptr> logger_maps_;
 };
-
-
-
 
 
 };
