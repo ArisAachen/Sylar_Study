@@ -43,7 +43,7 @@ public:
         return instance_;
     }
 private:
-    static std::shared_ptr<T> instance_ {nullptr};    
+    static std::shared_ptr<T> instance_ ;    
 };
 
 }

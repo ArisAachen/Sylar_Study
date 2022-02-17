@@ -1,6 +1,8 @@
 #include "fiber.h"
 #include "log.h"
 
+#include <cassert>
+
 namespace aris {
 
 class MallocStackAllocator {
@@ -18,10 +20,18 @@ using StackAllocator = MallocStackAllocator;
 
 Fiber::Fiber(std::function<void()>cb, size_t stacksize) :
 cb_(cb), stack_size_(stacksize) {
-    // add thread fiber
-    thread_fiber_count_++;
     // set current fiber
     fiber_id_ =  thread_fiber_count_;
+    // if thread main fiber is nullptr now
+    // show regard this fiber as default main fiber
+    if (thread_main_fiber_ == nullptr && cb == nullptr) {
+        getcontext(&context_);
+        set_thread_main_fiber(std::shared_ptr<Fiber>(this));
+        ARIS_LOG_FMT_INFO("create main fiber success, fiber id: %d", fiber_id_);
+        return;
+    }
+    // add thread fiber
+    thread_fiber_count_++;
     // malloc 
     stack_ = StackAllocator::Alloc(stacksize);
     // init state
@@ -36,7 +46,12 @@ cb_(cb), stack_size_(stacksize) {
 }   
 
 Fiber::~Fiber() {
-    
+    StackAllocator::Dealloc(stack_, stack_size_);
+}
+
+// get fiber current state
+Fiber::State Fiber::get_fiber_state() {
+    return state_;
 }
 
 void Fiber::set_thread_main_fiber(Fiber::ptr fiber) {
@@ -55,5 +70,97 @@ Fiber::ptr Fiber::get_thread_current_fiber() {
     return thread_current_fiber_->shared_from_this();
 }
 
+// get thread fiber count
+int Fiber::get_thread_fiber_count() {
+    return thread_fiber_count_;
+}
+
+// yield current fiber 
+void Fiber::yield() {
+    // main fiber cant be yield, 
+    // only children fiber can yield, so main fiber put in font ground
+    try {
+        if (fiber_id_ == thread_main_fiber_->fiber_id_);
+            throw std::logic_error("main fiber cannot be yield");
+
+        // yield current fiber, exec main fiber
+        set_thread_current_fiber(thread_main_fiber_); 
+        thread_main_fiber_->set_fiber_state(State::RUNNING);
+        // swap current fiber to main fiber
+        state_ = State::Ready;
+        swapcontext(&context_, &thread_main_fiber_->context_);
+    } catch (std::exception& e) {
+        ARIS_LOG_FMT_WARN("yield failed, err: %s",e.what());
+        return;
+    }
+    ARIS_LOG_FMT_INFO("fiber yield successfully, fiber id: %d", fiber_id_);
+}
+
+// resume execute current fiber
+void Fiber::resume() {
+    // current fiber is already in execute 
+    try {
+        // in case cant get back to main fiber
+        // other fiber must checkout from main fiber
+        // main fiber cant resume, because main fiber func has nothing to do 
+        if (thread_main_fiber_->fiber_id_ == fiber_id_) 
+            throw std::logic_error("main fiber cannot resume");
+        if (thread_current_fiber_ != thread_main_fiber_) 
+            throw std::logic_error("current fiber is not main fiber");
+        if (thread_current_fiber_->fiber_id_ == fiber_id_) 
+            throw std::logic_error("fiber id is the same");
+        // set current fiber as now
+        set_thread_current_fiber(std::shared_ptr<Fiber>(this));
+        state_ = State::RUNNING;
+        // swap to current fiber
+        thread_main_fiber_->set_fiber_state(State::Ready);
+        swapcontext(&thread_main_fiber_->context_, &context_);
+    } catch (std::exception& e) {
+        ARIS_LOG_FMT_WARN("fiber resume failed, fiber id: %d, err: %s", fiber_id_, e.what());
+        return;
+    }
+    ARIS_LOG_FMT_INFO("fiber resume successfully, fiber id: %d", fiber_id_);
+}
+
+// set fiber state
+void Fiber::set_fiber_state(Fiber::State state) {
+    state_ = state;
+}
+
+// reset fiber, reuse fiber
+void Fiber::reset(std::function<void()> cb) {
+    try {
+        if (fiber_id_ == thread_main_fiber_->fiber_id_)
+            throw std::logic_error("main fiber cannot be reset");
+        cb_ = cb;
+        // yield
+        yield();
+    } catch (std::exception& e) {
+        ARIS_LOG_FMT_WARN("fiber reset failed, fiber id: %d, err: %s", fiber_id_, e.what());
+        return;
+    }
+    // normally this log will not output
+    ARIS_LOG_FMT_INFO("fiber reset successfully, fiber id: %d", fiber_id_);
+}
+
+// try to run func
+void Fiber::run() {
+    try {
+        auto fiber = thread_current_fiber_;
+        // main fiber has no func, can not run
+        if (fiber == thread_main_fiber_) 
+            throw std::logic_error("main fiber cannot run");
+        // run fiber func    
+        if (fiber->cb_)
+            fiber->cb_();
+        // set fiber as term    
+        fiber->set_fiber_state(State::TERM);
+        // reset fiber
+        fiber->reset(nullptr);
+    } catch (std::exception& e) {
+        ARIS_LOG_FMT_WARN("fiber run failed, err: %s",e.what());
+        return;
+    }
+}
 
 }

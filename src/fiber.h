@@ -14,12 +14,15 @@ namespace aris {
 class Fiber : Noncopable, public std::enable_shared_from_this<Fiber> {
 public:
     typedef std::shared_ptr<Fiber> ptr;
-    Fiber(std::function<void()>cb, size_t stacksize);
+    Fiber(std::function<void()>cb = nullptr, size_t stacksize = 512);
     virtual~Fiber();
-
+    
+    /**
+     * @brief define fiber state
+     */
+    enum class State {Ready, RUNNING, TERM};
     /**
      * @brief Set the thread main fiber object
-     * 
      * @param[in] fiber set main fiber
      */
     static void set_thread_main_fiber(Fiber::ptr fiber);
@@ -32,12 +35,22 @@ public:
     /**
      * @brief this fiber is put in background state
      */
-    void back();
+    void yield();
 
     /**
      * @brief this fiber is put int front state
      */
-    void front();
+    void resume();
+
+    /**
+     * @brief reset fiber
+     */
+    void reset(std::function<void()> cb);
+
+    /**
+     * @brief 
+     */
+    State get_fiber_state();
 
     /**
      * @brief Get the thread current fiber object
@@ -52,7 +65,6 @@ public:
 private:
     /**
      * @brief Set the thread main fiber object
-     * 
      * @param[in] fiber set this fiber as thread current fiber
      */
     static void set_thread_current_fiber(Fiber::ptr fiber);
@@ -62,8 +74,11 @@ private:
      */
     static void run();
 
-private:
-    enum class State {Ready, RUNNING, TERM};
+    /**
+     * @brief Set the fiber state object
+     * @param[in] state set current state
+     */
+    void set_fiber_state(State state);
 
 private:
     /// current fiber
