@@ -63,6 +63,8 @@ public:
     static Fiber::ptr get_thread_main_fiber();
 
 private:
+    // create default fiber
+    Fiber();
     /**
      * @brief Set the thread main fiber object
      * @param[in] fiber set this fiber as thread current fiber

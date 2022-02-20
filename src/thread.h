@@ -1,8 +1,6 @@
 #ifndef __STUDY_SRC_THREAD_H__
 #define __STUDY_SRC_THREAD_H__
 
-namespace aris {
-
 #include "log.h"
 
 #include <pthread.h>
@@ -10,6 +8,9 @@ namespace aris {
 #include <iostream>
 #include <memory>
 #include <cstring>
+
+
+namespace aris {
 
 class Thread {
 public:
@@ -20,7 +21,7 @@ public:
      * @param[in] cb thread func 
      * @param[in] name thread name
      */
-    Thread(std::function<void()> cb, std::string & name);
+    Thread(std::function<void()> cb, const std::string & name);
     /**
      * @brief release thread
      * 

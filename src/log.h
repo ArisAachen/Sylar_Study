@@ -12,9 +12,6 @@
 #ifndef __STUDY_SRC_LOG_H__
 #define __STUDY_SRC_LOG_H__
 
-#include "singelton.h"
-#include "utils.h"
-
 #include <string>
 #include <iostream>
 #include <memory>
@@ -22,6 +19,9 @@
 #include <vector>
 #include <unordered_map>
 #include <unistd.h>
+
+#include "singelton.h"
+#include "utils.h"
 
 /**
  * @brief log use 
@@ -34,7 +34,7 @@
 #define ARIS_LOG_FMT_WARN(fmt, ...) ARIS_LOG_FMT_SIMPLE(aris::LogLevel::Level::WARN, fmt, __VA_ARGS__)
 #define ARIS_LOG_FMT_ERROR(fmt, ...) ARIS_LOG_FMT_SIMPLE(aris::LogLevel::Level::ERROR, fmt, __VA_ARGS__)
 
-#define ARIS_LOG_FMT_SIMPLE(level, fmt, ...) \ 
+#define ARIS_LOG_FMT_SIMPLE(level, fmt, ...) \
     aris::SingeltonPtr<aris::LogMgr>::get_instance()->log(level, std::shared_ptr<aris::LogEvent>(new aris::LogEvent(__FILE__, \
         __func__ , __LINE__, getpid(), pthread_self(), 0, time(nullptr), aris::StringGenerator::format(fmt, __VA_ARGS__))))
 
