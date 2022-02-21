@@ -44,7 +44,7 @@ public:
      * @param[in] cb thread func
      * @param[in] name thread name 
      */
-    void swap(std::function<void(void)>cb, const std::string & name);
+    void reset(std::function<void(void)>cb, const std::string & name);
     /**
      * @brief get thread id
      */

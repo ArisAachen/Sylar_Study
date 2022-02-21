@@ -3,7 +3,7 @@
 namespace aris {
 
 // create thread
-Thread::Thread(std::function<void()> cb, std::string & name) :
+Thread::Thread(std::function<void()> cb, const std::string & name) :
     cb_(cb), name_(name) {}
 
 
@@ -37,7 +37,7 @@ void Thread::stop() {
 }
 
 // swap func
-void Thread::swap(std::function<void(void)>cb, const std::string & name) {
+void Thread::reset(std::function<void(void)>cb, const std::string & name) {
     // stop origin thread
     stop();
     // reset 
