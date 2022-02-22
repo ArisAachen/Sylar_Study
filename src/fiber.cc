@@ -2,6 +2,8 @@
 #include "log.h"
 
 #include <cassert>
+#include <cstddef>
+#include <ucontext.h>
 
 namespace aris {
 
@@ -20,16 +22,13 @@ using StackAllocator = MallocStackAllocator;
 
 Fiber::Fiber(std::function<void()>cb, size_t stacksize) :
 cb_(cb), stack_size_(stacksize) {
-    // set current fiber
-    fiber_id_ =  thread_fiber_count_;
-    // if thread main fiber is nullptr now
-    // show regard this fiber as default main fiber
-    if (thread_main_fiber_ == nullptr && cb == nullptr) {
-        getcontext(&context_);
-        set_thread_main_fiber(std::shared_ptr<Fiber>(this));
-        ARIS_LOG_FMT_INFO("create main fiber success, fiber id: %d", fiber_id_);
+    create_main_fiber();
+    if (cb == nullptr) {
+        ARIS_LOG_FMT_WARN("cant create fiber with none func, create %s failed", "fiber");
         return;
     }
+    // set current fiber
+    fiber_id_ =  thread_fiber_count_;
     // add thread fiber
     thread_fiber_count_++;
     // malloc 
@@ -43,7 +42,20 @@ cb_(cb), stack_size_(stacksize) {
     context_.uc_stack.ss_size = stacksize;
     makecontext(&context_, &Fiber::run, 0);
     ARIS_LOG_FMT_INFO("create fiber success, fiber id: %d", fiber_id_);
-}   
+} 
+
+Fiber::Fiber() {
+    fiber_id_ = thread_fiber_count_;
+    getcontext(&context_);
+    thread_fiber_count_++;
+    ARIS_LOG_FMT_INFO("create default fiber success, fiber id: %d", fiber_id_);
+}
+
+void Fiber::create_main_fiber() {
+    if (thread_main_fiber_ != nullptr)
+        return;
+    thread_main_fiber_ = Fiber::ptr(new Fiber());
+}
 
 Fiber::~Fiber() {
     StackAllocator::Dealloc(stack_, stack_size_);
@@ -80,11 +92,11 @@ void Fiber::yield() {
     // main fiber cant be yield, 
     // only children fiber can yield, so main fiber put in font ground
     try {
-        if (fiber_id_ == thread_main_fiber_->fiber_id_);
+        if (fiber_id_ == thread_main_fiber_->fiber_id_)
             throw std::logic_error("main fiber cannot be yield");
 
         // yield current fiber, exec main fiber
-        set_thread_current_fiber(thread_main_fiber_); 
+        set_thread_current_fiber(thread_main_fiber_);
         thread_main_fiber_->set_fiber_state(State::RUNNING);
         // swap current fiber to main fiber
         state_ = State::Ready;

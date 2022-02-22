@@ -14,7 +14,7 @@ namespace aris {
 class Fiber : Noncopable, public std::enable_shared_from_this<Fiber> {
 public:
     typedef std::shared_ptr<Fiber> ptr;
-    Fiber(std::function<void()>cb = nullptr, size_t stacksize = 512);
+    Fiber(std::function<void()>cb , size_t stacksize = 512);
     virtual~Fiber();
     
     /**
@@ -65,6 +65,12 @@ public:
 private:
     // create default fiber
     Fiber();
+    
+    /**
+     * @brief Create a main fiber object
+     */
+    static void create_main_fiber();
+
     /**
      * @brief Set the thread main fiber object
      * @param[in] fiber set this fiber as thread current fiber

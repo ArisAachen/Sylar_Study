@@ -8,10 +8,10 @@
 
 #include <functional>
 #include <memory>
+#include <pthread.h>
 #include <string>
 #include <vector>
 #include <queue>
-
 
 namespace aris {
 
@@ -28,6 +28,8 @@ public:
      */
     Scheduler(int thread_count = 16, const std::string & name = "scheduler");
 
+    virtual~Scheduler();
+
     /**
      * @brief 
      * @param[in] cb exec func, should regard as fiber task
@@ -41,6 +43,10 @@ public:
 
 private:
     struct ScheduleTask {
+        typedef std::shared_ptr<ScheduleTask> ptr;
+        ScheduleTask() {
+
+        }
         /**
          * @brief Construct a new Schedule Task object
          * @param[in] fiber fiber task
@@ -66,6 +72,16 @@ private:
             fiber = nullptr;
         }
 
+        /**
+         * @brief execute fiber
+         */
+        void run() {
+            // check if fiber eixst
+            if (!fiber)
+                return;
+            fiber->resume();
+        }
+
         /// fiber task
         Fiber::ptr fiber {nullptr};
         /// add task to which 
@@ -78,14 +94,27 @@ private:
      */
     void run();
 
+    /**
+     * @brief idle 
+     */
+    void idle();
+
 private:
+    /// state
+    bool stop_ {false};
+    pthread_cond_t cont_ ;
+    
+    /// idle fiber
+    Fiber::ptr idle_fiber_ {new Fiber(std::bind(&Scheduler::idle, this))};
+
+    // thread
     std::string name_ {""};
     int thread_count_ {0};
     std::vector<Thread::ptr> threads_ {};
 
-    // task queu
+    /// task queu
     MutexType mutex_ ;
-    std::queue<Fiber::ptr> task {};
+    std::queue<ScheduleTask::ptr> tasks_ {};
 };
 
 
