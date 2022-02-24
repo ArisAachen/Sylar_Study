@@ -21,12 +21,9 @@ Thread::~Thread() {
 
 // run thread
 void Thread::run() {
-    // thread id 
-    if (thread_id_ == 0) 
-        return;
     int err = pthread_create(&thread_id_, nullptr, wrap, this);
     if (err != 0)
-        ARIS_LOG_FMT_ERROR("create failed, thread name: %s, err: %s", name_, strerror(errno));
+        ARIS_LOG_FMT_ERROR("create failed, thread name: %s, err: %s", name_.c_str(), strerror(errno));
 }
 
 // stop thread
@@ -48,11 +45,16 @@ void Thread::reset(std::function<void(void)>cb, const std::string & name) {
 void *Thread::wrap(void *arg) {
     // convert 
     auto thread =  static_cast<Thread*>(arg);
+    if (thread == nullptr) {
+        ARIS_LOG_FMT_ERROR("convert thread failed, %s", "static cast");
+        return (void*)1;
+    }
     // set thread name
     int err = pthread_setname_np(thread->thread_id_, thread->name_.c_str());
-    if (err != 0) 
+    if (err == 0) 
         ARIS_LOG_FMT_ERROR("set thread name failed, thread id: %d, error: %s", thread->thread_id_, strerror(errno));
     thread->cb_();
+    return (void*)1;
 }
 
 bool Thread::operator==(Thread & thread) {

@@ -1,4 +1,5 @@
 #include "log.h"
+#include "utils.h"
 
 #include <sstream>
 #include <ctime>
@@ -6,9 +7,10 @@
 #include <map>
 #include <functional>
 #include <stdarg.h>
+#include <string>
+#include <utility>
 
 namespace aris {
-
 
 /**
  * @brief transform level to string
@@ -75,7 +77,7 @@ LogEvent::LogEvent(const std::string & file, const std::string & func, uint32_t 
     uint32_t pid, uint32_t tid, uint32_t cid, uint64_t time, const std::string & msg):
     code_file_(file), code_func_(func), code_line_(line), 
     proc_id_(pid), thread_id_(tid), coroutine_id_(cid), 
-    log_time_(time) {
+    log_time_(time), log_msg_(msg) {
     // ARIS_LOG_INFO("%v %v", num, message);
     // should check if message is valid, 
     // 1. check if count of %v is equal with full params
@@ -269,7 +271,8 @@ public:
 
 LogFormatter::LogFormatter(const std::string & pattern):
     log_pattern_(pattern) {
-
+    format_items_.clear();
+    init();
 }
 
 LogFormatter::~LogFormatter() {
@@ -302,19 +305,22 @@ void LogFormatter::init() {
                 if (log_pattern_[n] == '}') {
                     // save time format to vec
                     key = "d";
-                    value = log_pattern_.substr(index+1, n-index-1);
+                    value = log_pattern_.substr(index+2, n-index-2);
                     // increase index to next
                     index = n + 1;
                     // add right value
                     vec.emplace_back(std::make_tuple(key, value, 0));
-                    continue;
+                    break;
                 }
                 n++;
             }
             // never reach here
             assert(n <= log_pattern_.size());
+            continue;
         }
-        vec.emplace_back(std::make_tuple(log_pattern_[index], std::string(), 0));
+        std::stringstream ss;
+        ss << log_pattern_[index];
+        vec.emplace_back(std::make_tuple(ss.str(), std::string(), 0));
     }
 
     // create items
@@ -383,6 +389,7 @@ const std::string LogAppender::get_log_format() const {
 }
 
 void StdoutLogAppender::log(LogLevel::Level level, const LogEvent::ptr event) {
+    Mutex::Lock lock(mutex_);
     // check if need put log to cout
     if (level_ > level) {
         return;
@@ -396,6 +403,7 @@ bool FileLogAppender::init(const std::string & file) {
 }
 
 void FileLogAppender::log(LogLevel::Level level, const LogEvent::ptr event) {
+    Mutex::Lock lock(mutex_);
     // check if need put log to file
     if (level_ > level) {
         return;
@@ -409,6 +417,10 @@ void FileLogAppender::log(LogLevel::Level level, const LogEvent::ptr event) {
     } catch (std::exception & exp) {
         
     }
+}
+
+FileLogAppender::~FileLogAppender() {
+    file_.close();
 }
 
 Logger::Logger(const std::string & name):
@@ -448,6 +460,39 @@ void Logger::log(LogLevel::Level level, const LogEvent::ptr event) {
     for (auto iter : appenders_) {
         iter->log(level, event);
     }
+}
+
+void LogMgr::addLogger(Logger::ptr logger) {
+    logger_maps_.insert(std::make_pair(logger->get_name(), logger));
+}
+
+void LogMgr::log(LogLevel::Level level, const LogEvent::ptr event) {
+    for (auto iter : logger_maps_) 
+        iter.second->log(level, event);
+}
+
+void LogMgr::trace(const LogEvent::ptr event) {
+    log(LogLevel::Level::TRACE, event);
+}
+
+void LogMgr::debug(const LogEvent::ptr event) {
+    log(LogLevel::Level::TRACE, event);
+}
+
+void LogMgr::info(const LogEvent::ptr event) {
+    log(LogLevel::Level::INFO, event);
+}
+
+void LogMgr::warn(const LogEvent::ptr event) {
+    log(LogLevel::Level::WARN, event);
+}
+
+void LogMgr::error(const LogEvent::ptr event) {
+    log(LogLevel::Level::ERROR, event);
+}
+
+void LogMgr::fatal(const LogEvent::ptr event) {
+    log(LogLevel::Level::FATAL, event);
 }
 
 }

@@ -76,7 +76,7 @@ public:
     // now only exist one param, other params use default value
     LogEvent(const std::string & msg);
 
-    virtual~LogEvent();
+    virtual~LogEvent() {};
 
     /**
      * @brief get code info
@@ -184,7 +184,7 @@ public:
      * 
      * @return * const std::string 
      */
-    const std::string get_format() const;
+    const std::string get_format() const {return log_pattern_;}
 
 public:
     /**
@@ -228,7 +228,8 @@ private:
 class LogAppender : public std::enable_shared_from_this<LogAppender> {
 public:
     typedef std::shared_ptr<LogAppender> ptr;
-    LogAppender() {}
+    typedef Mutex MutexType;
+    LogAppender() { formatter_ = LogFormatter::ptr(new LogFormatter()); }
     virtual~LogAppender() {}
 
     // op log level
@@ -244,9 +245,11 @@ public:
 
 protected:
     // set default log level as info
-    LogLevel::Level level_ {LogLevel::Level::INFO};
+    LogLevel::Level level_ {LogLevel::Level::TRACE};
     // log format
-    LogFormatter::ptr formatter_ {};
+    LogFormatter::ptr formatter_ {nullptr};
+    // write mutex
+    MutexType mutex_;
 }; 
 
 class StdoutLogAppender : public LogAppender {
@@ -261,7 +264,7 @@ public:
     virtual void log(LogLevel::Level level, const LogEvent::ptr event) override;
 
     bool init(const std::string & file);
-    ~FileLogAppender();
+    virtual~FileLogAppender();
 
 private:
     std::ofstream file_;
@@ -271,7 +274,7 @@ private:
 class Logger {
 public:
     typedef std::shared_ptr<Logger> ptr;
-    Logger(const std::string & name);
+    Logger(const std::string & name = "logger");
     virtual~Logger();
 
     // add log appender

@@ -26,7 +26,7 @@ public:
      * @param[in] thread_count create thread count
      * @param[in] name scheduler name
      */
-    Scheduler(int thread_count = 16, const std::string & name = "scheduler");
+    Scheduler(int thread_count = 1, const std::string & name = "scheduler");
 
     virtual~Scheduler();
 
@@ -42,7 +42,7 @@ public:
     void start();
 
 private:
-    struct ScheduleTask {
+    struct ScheduleTask : std::enable_shared_from_this<ScheduleTask>{
         typedef std::shared_ptr<ScheduleTask> ptr;
         ScheduleTask() {
 
@@ -61,8 +61,8 @@ private:
          * @param[in] cb fiber func
          * @param[in] thread exec thread
          */
-        ScheduleTask(std::function<void()> cb, int thr = -1) {
-            fiber->reset(cb);
+        ScheduleTask(std::function<void()> cb, int thr = -1):
+        fiber(new Fiber(cb)) {            
             thread = thr;
         }
         /**

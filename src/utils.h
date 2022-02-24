@@ -4,19 +4,28 @@
 
 
 #include "noncopable.h"
+#include "thread.h"
 #include <cassert>
+#include <cstdarg>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
 #include <string>
 #include <pthread.h>
+#include <sstream>
+#include <tuple>
 
 namespace aris {
 
 class StringGenerator {
 public:
-    template<typename... Args>
-    static const std::string format(const std::string & fmt, Args... args) {
-        char buf[128];
-        snprintf(buf, 128, fmt.c_str(), args...);
-        return std::string(buf);
+    static const std::string format(const std::string fmt, ...) {
+        va_list ap;
+        char* buf = nullptr;
+        va_start(ap, fmt);
+        auto len = vasprintf(&buf, fmt.c_str(), ap);
+        va_end(ap);
+        return std::string(buf, len);
     }
 };
 
@@ -25,8 +34,7 @@ template<typename T>
 class ScopeLockImpl {
 public:
     // lock
-    ScopeLockImpl(T& lock) {
-        lock_ = lock;
+    ScopeLockImpl(T& lock): lock_(lock) {
         lock_.lock();
         is_locked_ = true;
     }

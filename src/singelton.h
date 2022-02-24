@@ -38,12 +38,9 @@ class SingeltonPtr : Noncopable {
 public: 
     template<typename... Args>
     static std::shared_ptr<T> get_instance(Args... args) {
-        if (instance_ == nullptr) 
-            instance_ = std::shared_ptr<T>(new T(args...));
-        return instance_;
+        static std::shared_ptr<T> instance_ptr_ = std::shared_ptr<T>(new T(args...));
+        return instance_ptr_;
     }
-private:
-    static std::shared_ptr<T> instance_ ;    
 };
 
 }

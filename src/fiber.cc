@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <memory>
 #include <ucontext.h>
 
 namespace aris {
@@ -19,6 +20,10 @@ public:
 };
 
 using StackAllocator = MallocStackAllocator;
+
+static thread_local int thread_fiber_count_ = 0;
+static thread_local Fiber::ptr thread_main_fiber_ = nullptr;
+static thread_local Fiber::ptr thread_current_fiber_ = nullptr;
 
 Fiber::Fiber(std::function<void()>cb, size_t stacksize) :
 cb_(cb), stack_size_(stacksize) {
@@ -55,6 +60,7 @@ void Fiber::create_main_fiber() {
     if (thread_main_fiber_ != nullptr)
         return;
     thread_main_fiber_ = Fiber::ptr(new Fiber());
+    thread_current_fiber_ = thread_main_fiber_;
 }
 
 Fiber::~Fiber() {
@@ -96,7 +102,7 @@ void Fiber::yield() {
             throw std::logic_error("main fiber cannot be yield");
 
         // yield current fiber, exec main fiber
-        set_thread_current_fiber(thread_main_fiber_);
+        set_thread_current_fiber(thread_main_fiber_->shared_from_this());
         thread_main_fiber_->set_fiber_state(State::RUNNING);
         // swap current fiber to main fiber
         state_ = State::Ready;
@@ -122,7 +128,7 @@ void Fiber::resume() {
         if (thread_current_fiber_->fiber_id_ == fiber_id_) 
             throw std::logic_error("fiber id is the same");
         // set current fiber as now
-        set_thread_current_fiber(std::shared_ptr<Fiber>(this));
+        set_thread_current_fiber(shared_from_this());
         state_ = State::RUNNING;
         // swap to current fiber
         thread_main_fiber_->set_fiber_state(State::Ready);
@@ -142,9 +148,9 @@ void Fiber::set_fiber_state(Fiber::State state) {
 // reset fiber, reuse fiber
 void Fiber::reset(std::function<void()> cb) {
     try {
-        if (fiber_id_ == thread_main_fiber_->fiber_id_)
+        if (thread_main_fiber_ && fiber_id_ == thread_main_fiber_->fiber_id_)
             throw std::logic_error("main fiber cannot be reset");
-        cb_ = cb;
+        cb_.swap(cb);
         // yield
         yield();
     } catch (std::exception& e) {

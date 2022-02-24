@@ -53,6 +53,11 @@ public:
     State get_fiber_state();
 
     /**
+     * @brief Create a main fiber object
+     */
+    static void create_main_fiber();
+
+    /**
      * @brief Get the thread current fiber object
      */
     static Fiber::ptr get_thread_current_fiber();
@@ -65,11 +70,6 @@ public:
 private:
     // create default fiber
     Fiber();
-    
-    /**
-     * @brief Create a main fiber object
-     */
-    static void create_main_fiber();
 
     /**
      * @brief Set the thread main fiber object
@@ -100,9 +100,9 @@ private:
     uint32_t stack_size_ {0};
 
     /// global fiber
-    static thread_local Fiber::ptr thread_main_fiber_ ;
-    static thread_local Fiber::ptr thread_current_fiber_ ;
-    static thread_local std::atomic<int> thread_fiber_count_;
+    // static thread_local Fiber::ptr thread_main_fiber_ ;
+    // static thread_local Fiber::ptr thread_current_fiber_ ;
+    // static thread_local int thread_fiber_count_;
 };
 
 
