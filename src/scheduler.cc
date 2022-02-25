@@ -28,6 +28,7 @@ Scheduler::Scheduler(int thread_count, const std::string & name) {
 }
 
 Scheduler::~Scheduler() {
+    sleep(1000000);
     threads_.clear();
     std::queue<ScheduleTask::ptr> tmp;
     tasks_.swap(tmp);
@@ -37,7 +38,6 @@ Scheduler::~Scheduler() {
 // schedule
 void Scheduler::schedule(std::function<void ()> cb) {
     // push task
-    CondType cond(cond_);
     tasks_.push(ScheduleTask::ptr(new ScheduleTask(cb)));
 }
 
@@ -49,11 +49,13 @@ void Scheduler::start() {
         thread->run();
     });
     // this thread should also added to fiber
-    run();
+    // run();
 }
 
 void Scheduler::run() {
     Fiber::create_main_fiber();
+    if (idle_fiber_ == nullptr)
+        idle_fiber_ = Fiber::ptr(new Fiber(std::bind(&Scheduler::idle, this)));
     ScheduleTask::ptr task;
     while (true) {
         // if tasks is now empty, should idle here
@@ -65,22 +67,25 @@ void Scheduler::run() {
                     return;
                 }
                 idle_fiber_->resume();
-            }
-
-            //  get front elem
-            std::weak_ptr<ScheduleTask> weak(tasks_.front());
-            if (weak.expired()) {
-                ARIS_LOG_FMT_INFO("task has already expired, %s", "inspire");
-                tasks_.pop();
                 continue;
             }
-            task = weak.lock();
+            task = tasks_.front();
             tasks_.pop();
+        }
+        std::weak_ptr<ScheduleTask> weak(task);
+        if (weak.expired()) {
+            ARIS_LOG_FMT_INFO("fiber has already expired, %s", "inspire");
+            continue;
+        }
+        std::weak_ptr<Fiber> fiber(task->fiber);
+        if (fiber.expired()) {
+            ARIS_LOG_FMT_INFO("fiber has already expired, %s", "inspire");
+            continue;
         }
         // check if task is in ready state
         ARIS_ASSERT(task->fiber->get_fiber_state() == Fiber::State::Ready);
         // run task
-        task->run();
+        // task->run();
     }
 }
 

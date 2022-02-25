@@ -53,7 +53,8 @@ void *Thread::wrap(void *arg) {
     int err = pthread_setname_np(thread->thread_id_, thread->name_.c_str());
     if (err == 0) 
         ARIS_LOG_FMT_ERROR("set thread name failed, thread id: %d, error: %s", thread->thread_id_, strerror(errno));
-    thread->cb_();
+    if (thread->cb_)
+        thread->cb_();
     return (void*)1;
 }
 

@@ -64,7 +64,7 @@ static std::string level_to_string(Level level);
 static Level string_to_level(const std::string & msg);
 };
 
-class LogEvent : public std::enable_shared_from_this<LogEvent> {
+class LogEvent {
 public:
     typedef  std::chrono::time_point<std::chrono::system_clock> TimePoint;
     typedef std::shared_ptr<LogEvent> ptr;

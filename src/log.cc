@@ -13,6 +13,7 @@
 #include <stdarg.h>
 #include <string>
 #include <iomanip>
+#include <unistd.h>
 #include <utility>
 
 namespace aris {
@@ -363,7 +364,7 @@ std::string LogFormatter::format(LogLevel::Level level, const LogEvent::ptr & ev
     std::stringstream ss;
     // append all items
     for (auto iter : format_items_) {
-        ss << iter->format(level, event->shared_from_this());
+        ss << iter->format(level, event);
     }
     return ss.str();
 }
@@ -371,7 +372,7 @@ std::string LogFormatter::format(LogLevel::Level level, const LogEvent::ptr & ev
 std::ostream & LogFormatter::format(std::ostream & os, LogLevel::Level level, const LogEvent::ptr & event) {
     // append all items
     for (auto iter : format_items_) {
-        iter->format(os, level, event->shared_from_this());
+        iter->format(os, level, event);
     }
     return os;
 }
@@ -399,7 +400,7 @@ void StdoutLogAppender::log(LogLevel::Level level, const LogEvent::ptr event) {
     if (level_ > level) {
         return;
     }
-    formatter_->format(std::cout, level, event->shared_from_this());
+    formatter_->format(std::cout, level, event);
 }
 
 bool FileLogAppender::init(const std::string & file) {
@@ -418,7 +419,7 @@ void FileLogAppender::log(LogLevel::Level level, const LogEvent::ptr event) {
     }
     // try to capture error
     try {
-        formatter_->format(file_, level, event->shared_from_this());
+        formatter_->format(file_, level, event);
     } catch (std::exception & exp) {
         
     }
@@ -463,7 +464,7 @@ const std::string Logger::get_name() {
 
 void Logger::log(LogLevel::Level level, const LogEvent::ptr event) {
     for (auto iter : appenders_) {
-        iter->log(level, event->shared_from_this());
+        iter->log(level, event);
     }
 }
 
@@ -473,31 +474,31 @@ void LogMgr::addLogger(Logger::ptr logger) {
 
 void LogMgr::log(LogLevel::Level level, const LogEvent::ptr event) {
     for (auto iter : logger_maps_) 
-        iter.second->log(level, event->shared_from_this());
+        iter.second->log(level, event);
 }
 
 void LogMgr::trace(const LogEvent::ptr event) {
-    log(LogLevel::Level::TRACE, event->shared_from_this());
+    log(LogLevel::Level::TRACE, event);
 }
 
 void LogMgr::debug(const LogEvent::ptr event) {
-    log(LogLevel::Level::TRACE, event->shared_from_this());
+    log(LogLevel::Level::TRACE, event);
 }
 
 void LogMgr::info(const LogEvent::ptr event) {
-    log(LogLevel::Level::INFO, event->shared_from_this());
+    log(LogLevel::Level::INFO, event);
 }
 
 void LogMgr::warn(const LogEvent::ptr event) {
-    log(LogLevel::Level::WARN, event->shared_from_this());
+    log(LogLevel::Level::WARN, event);
 }
 
 void LogMgr::error(const LogEvent::ptr event) {
-    log(LogLevel::Level::ERROR, event->shared_from_this());
+    log(LogLevel::Level::ERROR, event);
 }
 
 void LogMgr::fatal(const LogEvent::ptr event) {
-    log(LogLevel::Level::FATAL, event->shared_from_this());
+    log(LogLevel::Level::FATAL, event);
 }
 
 }

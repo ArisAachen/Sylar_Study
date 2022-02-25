@@ -12,7 +12,7 @@
 
 namespace aris {
 
-class Thread {
+class Thread : public std::enable_shared_from_this<Thread> {
 public:
     typedef std::shared_ptr<Thread> ptr;
     /**
