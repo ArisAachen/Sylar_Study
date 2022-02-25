@@ -27,7 +27,7 @@ static thread_local Fiber::ptr thread_current_fiber_ = nullptr;
 
 Fiber::Fiber(std::function<void()>cb, size_t stacksize) :
 cb_(cb), stack_size_(stacksize) {
-    create_main_fiber();
+    // create_main_fiber();
     if (cb == nullptr) {
         ARIS_LOG_FMT_WARN("cant create fiber with none func, create %s failed", "fiber");
         return;

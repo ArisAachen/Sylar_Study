@@ -26,7 +26,7 @@ public:
      * @param[in] thread_count create thread count
      * @param[in] name scheduler name
      */
-    Scheduler(int thread_count = 1, const std::string & name = "scheduler");
+    Scheduler(int thread_count = 0, const std::string & name = "scheduler");
 
     virtual~Scheduler();
 
@@ -113,7 +113,7 @@ private:
 
     /// task queu
     CondType cond_;
-    std::queue<ScheduleTask::ptr> tasks_ {};
+    std::queue<ScheduleTask::ptr> tasks_ ;
 };
 
 

@@ -64,7 +64,7 @@ static std::string level_to_string(Level level);
 static Level string_to_level(const std::string & msg);
 };
 
-class LogEvent {
+class LogEvent : public std::enable_shared_from_this<LogEvent> {
 public:
     typedef  std::chrono::time_point<std::chrono::system_clock> TimePoint;
     typedef std::shared_ptr<LogEvent> ptr;
@@ -166,7 +166,7 @@ public:
      * 
      * @param pattern 
      */
-    LogFormatter(const std::string & pattern = "%d{%Y-%m-%d %H:%M:%S}%T%t%T%N%T%F%T[%p]%T[%c]%T%f:%l%T%m%n");
+    LogFormatter(const std::string & pattern = "%d{%Y-%m-%d %H:%M:%S}%T[%p]%T%m%n");
 
     /**
      * @brief Destroy the Log Formatter object

@@ -4,6 +4,8 @@
 
 
 #include "noncopable.h"
+#include "macro.h"
+
 #include "thread.h"
 #include <cassert>
 #include <cstdarg>
@@ -25,13 +27,13 @@ public:
         char* buf = nullptr;
         va_start(ap, fmt);
         auto len = vasprintf(&buf, fmt.c_str(), ap);
+        ARIS_ASSERT(len > 0);
         va_end(ap);
         std::string ret(buf, len);
         free(buf);
         return ret;
     }
 };
-
 
 template<typename T>
 class ScopedLockImpl {

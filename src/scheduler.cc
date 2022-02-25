@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <functional>
 #include <algorithm>
+#include <memory>
 #include <queue>
 #include <string>
 #include <unistd.h>
@@ -48,7 +49,7 @@ void Scheduler::start() {
         thread->run();
     });
     // this thread should also added to fiber
-    // run();
+    run();
 }
 
 void Scheduler::run() {
@@ -65,9 +66,15 @@ void Scheduler::run() {
                 }
                 idle_fiber_->resume();
             }
-        
+
             //  get front elem
-            task = tasks_.front();
+            std::weak_ptr<ScheduleTask> weak(tasks_.front());
+            if (weak.expired()) {
+                ARIS_LOG_FMT_INFO("task has already expired, %s", "inspire");
+                tasks_.pop();
+                continue;
+            }
+            task = weak.lock();
             tasks_.pop();
         }
         // check if task is in ready state

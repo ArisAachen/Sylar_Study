@@ -3,6 +3,7 @@
 
 #include <bits/types/struct_tm.h>
 #include <chrono>
+#include <cstddef>
 #include <cstring>
 #include <sstream>
 #include <ctime>
@@ -184,7 +185,9 @@ public:
     virtual std::ostream & format(std::ostream & os, LogLevel::Level level, const LogEvent::ptr event) override  {
         LogEvent::TimePoint point = event->get_log_time();
         std::time_t local = std::chrono::system_clock::to_time_t(point);
-        auto put = std::put_time(std::localtime(&local), item_name_.c_str());
+        struct tm* tm = nullptr;
+        tm = std::localtime(&local);
+        auto put = std::put_time(tm, item_name_.c_str());
         return os << put;
     }
 };
@@ -360,7 +363,7 @@ std::string LogFormatter::format(LogLevel::Level level, const LogEvent::ptr & ev
     std::stringstream ss;
     // append all items
     for (auto iter : format_items_) {
-        ss << iter->format(level, event);
+        ss << iter->format(level, event->shared_from_this());
     }
     return ss.str();
 }
@@ -368,7 +371,7 @@ std::string LogFormatter::format(LogLevel::Level level, const LogEvent::ptr & ev
 std::ostream & LogFormatter::format(std::ostream & os, LogLevel::Level level, const LogEvent::ptr & event) {
     // append all items
     for (auto iter : format_items_) {
-        iter->format(os, level, event);
+        iter->format(os, level, event->shared_from_this());
     }
     return os;
 }
@@ -396,7 +399,7 @@ void StdoutLogAppender::log(LogLevel::Level level, const LogEvent::ptr event) {
     if (level_ > level) {
         return;
     }
-    formatter_->format(std::cout, level, event);
+    formatter_->format(std::cout, level, event->shared_from_this());
 }
 
 bool FileLogAppender::init(const std::string & file) {
@@ -415,7 +418,7 @@ void FileLogAppender::log(LogLevel::Level level, const LogEvent::ptr event) {
     }
     // try to capture error
     try {
-        formatter_->format(file_, level, event);
+        formatter_->format(file_, level, event->shared_from_this());
     } catch (std::exception & exp) {
         
     }
@@ -460,7 +463,7 @@ const std::string Logger::get_name() {
 
 void Logger::log(LogLevel::Level level, const LogEvent::ptr event) {
     for (auto iter : appenders_) {
-        iter->log(level, event);
+        iter->log(level, event->shared_from_this());
     }
 }
 
@@ -470,31 +473,31 @@ void LogMgr::addLogger(Logger::ptr logger) {
 
 void LogMgr::log(LogLevel::Level level, const LogEvent::ptr event) {
     for (auto iter : logger_maps_) 
-        iter.second->log(level, event);
+        iter.second->log(level, event->shared_from_this());
 }
 
 void LogMgr::trace(const LogEvent::ptr event) {
-    log(LogLevel::Level::TRACE, event);
+    log(LogLevel::Level::TRACE, event->shared_from_this());
 }
 
 void LogMgr::debug(const LogEvent::ptr event) {
-    log(LogLevel::Level::TRACE, event);
+    log(LogLevel::Level::TRACE, event->shared_from_this());
 }
 
 void LogMgr::info(const LogEvent::ptr event) {
-    log(LogLevel::Level::INFO, event);
+    log(LogLevel::Level::INFO, event->shared_from_this());
 }
 
 void LogMgr::warn(const LogEvent::ptr event) {
-    log(LogLevel::Level::WARN, event);
+    log(LogLevel::Level::WARN, event->shared_from_this());
 }
 
 void LogMgr::error(const LogEvent::ptr event) {
-    log(LogLevel::Level::ERROR, event);
+    log(LogLevel::Level::ERROR, event->shared_from_this());
 }
 
 void LogMgr::fatal(const LogEvent::ptr event) {
-    log(LogLevel::Level::FATAL, event);
+    log(LogLevel::Level::FATAL, event->shared_from_this());
 }
 
 }
