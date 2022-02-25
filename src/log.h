@@ -19,6 +19,7 @@
 #include <vector>
 #include <unordered_map>
 #include <unistd.h>
+#include <chrono>
 
 #include "singelton.h"
 #include "utils.h"
@@ -36,7 +37,7 @@
 
 #define ARIS_LOG_FMT_SIMPLE(level, fmt, ...) \
     aris::SingeltonPtr<aris::LogMgr>::get_instance()->log(level, aris::LogEvent::ptr(new aris::LogEvent(__FILE__, \
-        __func__ , __LINE__, getpid(), pthread_self(), 0, time(nullptr), aris::StringGenerator::format(fmt, __VA_ARGS__))))
+        __func__ , __LINE__, getpid(), pthread_self(), 0, std::chrono::system_clock::now(), aris::StringGenerator::format(fmt, __VA_ARGS__))))
 
 namespace aris {
 
@@ -65,6 +66,7 @@ static Level string_to_level(const std::string & msg);
 
 class LogEvent {
 public:
+    typedef  std::chrono::time_point<std::chrono::system_clock> TimePoint;
     typedef std::shared_ptr<LogEvent> ptr;
     /**
      * @brief delete default constructor
@@ -98,7 +100,7 @@ public:
      * @brief 
      * 
      */
-    uint64_t get_log_time() { return log_time_; }
+    TimePoint get_log_time() { return log_time_; }
     const std::string get_log_msg() { return log_msg_; }
 
 public:
@@ -108,7 +110,7 @@ public:
      * @param file 
      */
     LogEvent(const std::string & file, const std::string & func, uint32_t line, 
-        uint32_t pid, uint32_t tid, uint32_t cid, uint64_t time, const std::string & msg);
+        uint32_t pid, uint32_t tid, uint32_t cid, TimePoint time, const std::string & msg);
 
 private:
     /**
@@ -132,7 +134,7 @@ private:
      * @brief log time and log message
      * 
      */
-    uint64_t log_time_ {0};
+    TimePoint log_time_ {};
     std::string log_msg_ {};
 };
 
@@ -164,7 +166,7 @@ public:
      * 
      * @param pattern 
      */
-    LogFormatter(const std::string & pattern = "%[%p]%n");
+    LogFormatter(const std::string & pattern = "%d{%Y-%m-%d %H:%M:%S}%T%t%T%N%T%F%T[%p]%T[%c]%T%f:%l%T%m%n");
 
     /**
      * @brief Destroy the Log Formatter object

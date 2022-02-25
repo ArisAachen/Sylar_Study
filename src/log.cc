@@ -1,6 +1,9 @@
 #include "log.h"
 #include "utils.h"
 
+#include <bits/types/struct_tm.h>
+#include <chrono>
+#include <cstring>
 #include <sstream>
 #include <ctime>
 #include <cassert>
@@ -8,6 +11,7 @@
 #include <functional>
 #include <stdarg.h>
 #include <string>
+#include <iomanip>
 #include <utility>
 
 namespace aris {
@@ -74,7 +78,7 @@ LogEvent::LogEvent(const std::string & msg) {}
  * @param msg current message
  */
 LogEvent::LogEvent(const std::string & file, const std::string & func, uint32_t line, 
-    uint32_t pid, uint32_t tid, uint32_t cid, uint64_t time, const std::string & msg):
+    uint32_t pid, uint32_t tid, uint32_t cid, TimePoint time, const std::string & msg):
     code_file_(file), code_func_(func), code_line_(line), 
     proc_id_(pid), thread_id_(tid), coroutine_id_(cid), 
     log_time_(time), log_msg_(msg) {
@@ -171,22 +175,17 @@ public:
     ~DateTimeFormatItem() {}
 
     virtual std::string format(LogLevel::Level level, const LogEvent::ptr event) override {
-        // TODO: can use c+11 chrono lib here
-        time_t seconds = event->get_log_time();
-        struct tm* local_time = localtime(&seconds);
-        char buf[64];
-        strftime(buf, sizeof(buf), item_name_.c_str(), local_time);
-        std::stringstream stream;
-        stream << buf;
-        return stream.str();
+        LogEvent::TimePoint point = event->get_log_time();
+        std::time_t local = std::chrono::system_clock::to_time_t(point);
+        auto put = std::put_time(std::localtime(&local), item_name_.c_str());
+        return std::string(put._M_fmt);
     }
 
     virtual std::ostream & format(std::ostream & os, LogLevel::Level level, const LogEvent::ptr event) override  {
-        time_t seconds = event->get_log_time();
-        struct tm* local_time = localtime(&seconds);
-        char buf[64];
-        strftime(buf, sizeof(buf), item_name_.c_str(), local_time);
-        return os << buf;
+        LogEvent::TimePoint point = event->get_log_time();
+        std::time_t local = std::chrono::system_clock::to_time_t(point);
+        auto put = std::put_time(std::localtime(&local), item_name_.c_str());
+        return os << put;
     }
 };
 

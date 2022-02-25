@@ -54,7 +54,7 @@ void Scheduler::start() {
 void Scheduler::run() {
     Fiber::create_main_fiber();
     ScheduleTask::ptr task;
-    while (tasks_.empty() && stop_) {
+    while (true) {
         // if tasks is now empty, should idle here
         {
             CondType::Wait cond(cond_);
@@ -80,7 +80,7 @@ void Scheduler::run() {
 void Scheduler::idle() {
     if (stop_) 
         return;
-    ARIS_LOG_FMT_INFO("begin to idle, %s", "sleeping");
+    // ARIS_LOG_FMT_INFO("begin to idle, %s", "sleeping");
     // it
     CondType::Wait cond(cond_);
     cond.wait();

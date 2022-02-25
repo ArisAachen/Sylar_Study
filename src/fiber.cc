@@ -137,7 +137,7 @@ void Fiber::resume() {
         ARIS_LOG_FMT_WARN("fiber resume failed, fiber id: %d, err: %s", fiber_id_, e.what());
         return;
     }
-    ARIS_LOG_FMT_INFO("fiber resume successfully, fiber id: %d", fiber_id_);
+    // ARIS_LOG_FMT_INFO("fiber resume successfully, fiber id: %d", fiber_id_);
 }
 
 // set fiber state
@@ -174,7 +174,7 @@ void Fiber::run() {
         // set fiber as term    
         fiber->set_fiber_state(State::TERM);
         // reset fiber
-        fiber->reset(nullptr);
+        fiber->yield();
     } catch (std::exception& e) {
         ARIS_LOG_FMT_WARN("fiber run failed, err: %s",e.what());
         return;

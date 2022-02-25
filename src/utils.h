@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <string>
 #include <pthread.h>
 #include <sstream>
@@ -25,7 +26,9 @@ public:
         va_start(ap, fmt);
         auto len = vasprintf(&buf, fmt.c_str(), ap);
         va_end(ap);
-        return std::string(buf, len);
+        std::string ret(buf, len);
+        free(buf);
+        return ret;
     }
 };
 
