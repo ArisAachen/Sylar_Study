@@ -77,7 +77,7 @@ void Fiber::set_thread_main_fiber(Fiber::ptr fiber) {
 }
 
 Fiber::ptr Fiber::get_thread_main_fiber() {
-    return thread_main_fiber_->shared_from_this();
+    return thread_main_fiber_;
 }
 
 void Fiber::set_thread_current_fiber(Fiber::ptr fiber) {
@@ -85,7 +85,7 @@ void Fiber::set_thread_current_fiber(Fiber::ptr fiber) {
 }
 
 Fiber::ptr Fiber::get_thread_current_fiber() {
-    return thread_current_fiber_->shared_from_this();
+    return thread_current_fiber_;
 }
 
 // get thread fiber count
@@ -102,7 +102,7 @@ void Fiber::yield() {
             throw std::logic_error("main fiber cannot be yield");
 
         // yield current fiber, exec main fiber
-        set_thread_current_fiber(thread_main_fiber_->shared_from_this());
+        set_thread_current_fiber(thread_main_fiber_);
         thread_main_fiber_->set_fiber_state(State::RUNNING);
         // swap current fiber to main fiber
         state_ = State::Ready;

@@ -16,7 +16,6 @@
 namespace aris {
 
 Scheduler::Scheduler(int thread_count, const std::string & name) {
-    pthread_cond_init(&cont_, nullptr);
     // save name
     name_ = name;
     // create thread
@@ -28,7 +27,6 @@ Scheduler::Scheduler(int thread_count, const std::string & name) {
 }
 
 Scheduler::~Scheduler() {
-    pthread_cond_destroy(&cont_);
     threads_.clear();
     std::queue<ScheduleTask::ptr> tmp;
     tasks_.swap(tmp);
@@ -38,8 +36,8 @@ Scheduler::~Scheduler() {
 // schedule
 void Scheduler::schedule(std::function<void ()> cb) {
     // push task
-    tasks_.emplace(new ScheduleTask(cb));
-    pthread_cond_signal(&cont_);
+    CondType cond(cond_);
+    tasks_.push(ScheduleTask::ptr(new ScheduleTask(cb)));
 }
 
 // 
@@ -56,24 +54,22 @@ void Scheduler::start() {
 void Scheduler::run() {
     Fiber::create_main_fiber();
     ScheduleTask::ptr task;
-    while (true) {
+    while (tasks_.empty() && stop_) {
         // if tasks is now empty, should idle here
-        if (tasks_.empty()) {
-            if (stop_) {
-                ARIS_LOG_FMT_INFO("schedule stop, should end, scheduler name: %s", name_.c_str());
-                return;
-            }
-            idle_fiber_->resume();
-        }
-        //  get front elem
         {
-            MutexType::Lock lock(mutex_);
+            CondType::Wait cond(cond_);
+            if (tasks_.empty()) {
+                if (stop_) {
+                    ARIS_LOG_FMT_INFO("schedule stop, should end, scheduler name: %s", name_.c_str());
+                    return;
+                }
+                idle_fiber_->resume();
+            }
+        
+            //  get front elem
             task = tasks_.front();
             tasks_.pop();
         }
-    
-        if (task == nullptr || task->fiber == nullptr) 
-            continue;
         // check if task is in ready state
         ARIS_ASSERT(task->fiber->get_fiber_state() == Fiber::State::Ready);
         // run task
@@ -84,9 +80,10 @@ void Scheduler::run() {
 void Scheduler::idle() {
     if (stop_) 
         return;
-    ARIS_LOG_FMT_DEBUG("begin to idle, %s", "sleeping");
+    ARIS_LOG_FMT_INFO("begin to idle, %s", "sleeping");
     // it
-    pthread_cond_wait(&cont_, nullptr);
+    CondType::Wait cond(cond_);
+    cond.wait();
 }
 
 }

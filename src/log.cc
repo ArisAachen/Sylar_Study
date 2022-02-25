@@ -91,11 +91,13 @@ public:
     ~StringFormatItem() {}
 
     virtual std::string format(LogLevel::Level level, const LogEvent::ptr event) override {
-        return this->get_item_name();
+        event.use_count();
+        return get_item_name();
     }
 
     virtual std::ostream & format(std::ostream & os, LogLevel::Level level, const LogEvent::ptr event) override  {
-        return os << this->get_item_name();
+        event.use_count();
+        return os << get_item_name();
     }
 };
 
@@ -346,10 +348,11 @@ void LogFormatter::init() {
         // cant find a instance, regard this format as origin string
         if (iter == items.end()) {
             // add origin string "-" "[" "]"
-            format_items_.emplace_back(StringFormatItem::ptr(new StringFormatItem(std::get<0>(it))));
+            // format_items_.emplace_back(new StringFormatItem(std::get<0>(it)));
+            format_items_.emplace_back(FormatItem::ptr(new StringFormatItem(std::get<0>(it))));
         } else {
             // emplace back DataTimeFormat("xxx")
-            format_items_.emplace_back(iter->second(std::get<1>(it)));
+            format_items_.emplace_back((iter->second(std::get<1>(it))));
         }
     }
 }

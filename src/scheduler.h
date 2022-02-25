@@ -9,15 +9,15 @@
 #include <functional>
 #include <memory>
 #include <pthread.h>
+#include <queue>
 #include <string>
 #include <vector>
-#include <queue>
 
 namespace aris {
 
 class Scheduler : Noncopable {
 public:
-    typedef Mutex MutexType;
+    typedef Cond CondType;
     typedef std::shared_ptr<Scheduler> ptr;
 
     /**
@@ -102,7 +102,6 @@ private:
 private:
     /// state
     bool stop_ {false};
-    pthread_cond_t cont_ ;
     
     /// idle fiber
     Fiber::ptr idle_fiber_ {new Fiber(std::bind(&Scheduler::idle, this))};
@@ -113,7 +112,7 @@ private:
     std::vector<Thread::ptr> threads_ {};
 
     /// task queu
-    MutexType mutex_ ;
+    CondType cond_;
     std::queue<ScheduleTask::ptr> tasks_ {};
 };
 

@@ -39,7 +39,7 @@ public:
     template<typename... Args>
     static std::shared_ptr<T> get_instance(Args... args) {
         static std::shared_ptr<T> instance_ptr_ = std::shared_ptr<T>(new T(args...));
-        return instance_ptr_;
+        return instance_ptr_->shared_from_this();
     }
 };
 

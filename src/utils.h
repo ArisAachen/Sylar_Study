@@ -31,15 +31,15 @@ public:
 
 
 template<typename T>
-class ScopeLockImpl {
+class ScopedLockImpl {
 public:
     // lock
-    ScopeLockImpl(T& lock): lock_(lock) {
+    ScopedLockImpl(T& lock): lock_(lock) {
         lock_.lock();
         is_locked_ = true;
     }
     // unlock
-    virtual~ScopeLockImpl() {
+    virtual~ScopedLockImpl() {
         unlock();
     }
 
@@ -65,7 +65,7 @@ private:
 
 class Mutex {
 public:
-    typedef ScopeLockImpl<Mutex> Lock;
+    typedef ScopedLockImpl<Mutex> Lock;
     Mutex() {
         pthread_mutex_init(&lock_, nullptr);
     }
@@ -83,6 +83,96 @@ private:
 };
 
 
+
+template <typename T>
+class ScopedCondImpl {
+public:
+    ScopedCondImpl(T& cond): cond_(cond) {
+        lock();
+    }
+
+    // wait
+    void wait() {
+        lock();
+        cond_.wait();
+        unlock();
+    }
+
+    // signal
+    void signal() {
+        unlock();
+        cond_.signal();
+        locked_ = false;
+    }
+
+    // lock
+    void lock() {
+        if (locked_) 
+            return;
+        locked_ = true;
+        cond_.lock();
+    }
+
+    // unlock
+    void unlock() {
+        if (!locked_) 
+            return;
+        locked_ = false;
+        cond_.unlock();
+    }
+    
+    ~ScopedCondImpl() {
+        signal();
+    }
+
+private:
+    bool locked_ {false};
+    T& cond_;
+};
+
+
+class Cond {
+public:
+    typedef ScopedCondImpl<Cond> Wait;
+    Cond() {
+        pthread_cond_init(&cond_, nullptr);
+        pthread_mutex_init(&mutex_, nullptr);
+    }
+
+    // wait
+    void wait() {
+        pthread_cond_wait(&cond_, &mutex_);
+    }
+
+    // signal
+    void signal() {
+        pthread_cond_signal(&cond_);
+    }
+
+    // broadcast
+    void broadcast() {
+        pthread_cond_broadcast(&cond_);
+    }
+
+    // lock
+    void lock() {
+        pthread_mutex_lock(&mutex_);
+    }
+
+    // unlock
+    void unlock() {
+        pthread_mutex_unlock(&mutex_);
+    }
+
+    ~Cond() {
+        pthread_mutex_destroy(&mutex_);
+        pthread_cond_destroy(&cond_);
+    }
+
+private:
+    pthread_mutex_t mutex_;
+    pthread_cond_t cond_;
+};
 
 
 }

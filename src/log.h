@@ -35,7 +35,7 @@
 #define ARIS_LOG_FMT_ERROR(fmt, ...) ARIS_LOG_FMT_SIMPLE(aris::LogLevel::Level::ERROR, fmt, __VA_ARGS__)
 
 #define ARIS_LOG_FMT_SIMPLE(level, fmt, ...) \
-    aris::SingeltonPtr<aris::LogMgr>::get_instance()->log(level, std::shared_ptr<aris::LogEvent>(new aris::LogEvent(__FILE__, \
+    aris::SingeltonPtr<aris::LogMgr>::get_instance()->log(level, aris::LogEvent::ptr(new aris::LogEvent(__FILE__, \
         __func__ , __LINE__, getpid(), pthread_self(), 0, time(nullptr), aris::StringGenerator::format(fmt, __VA_ARGS__))))
 
 namespace aris {
@@ -63,7 +63,7 @@ static std::string level_to_string(Level level);
 static Level string_to_level(const std::string & msg);
 };
 
-class LogEvent : public std::enable_shared_from_this<LogEvent> {
+class LogEvent {
 public:
     typedef std::shared_ptr<LogEvent> ptr;
     /**
@@ -164,7 +164,7 @@ public:
      * 
      * @param pattern 
      */
-    LogFormatter(const std::string & pattern = "%d{%Y-%m-%d %H:%M:%S}%T%t%T%N%T%F%T[%p]%T[%c]%T%f:%l%T%m%n");
+    LogFormatter(const std::string & pattern = "%[%p]%n");
 
     /**
      * @brief Destroy the Log Formatter object
@@ -225,7 +225,7 @@ private:
     std::vector<FormatItem::ptr> format_items_;
 };
 
-class LogAppender : public std::enable_shared_from_this<LogAppender> {
+class LogAppender {
 public:
     typedef std::shared_ptr<LogAppender> ptr;
     typedef Mutex MutexType;
@@ -293,7 +293,7 @@ private:
 };
 
 
-class LogMgr {
+class LogMgr : public std::enable_shared_from_this<LogMgr> {
 public:
     void addLogger(Logger::ptr logger);
     void delLogger(Logger::ptr logger);

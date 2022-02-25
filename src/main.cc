@@ -13,7 +13,7 @@ int main () {
 
     // create scheduler
     aris::Scheduler::ptr sched(new aris::Scheduler());
-    for (int index = 0; index < 1; index++ ) {
+    for (int index = 0; index < 2; index++ ) {
         sched->schedule(test);
     }
     sched->start();
